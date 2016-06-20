@@ -42,42 +42,29 @@ var AvatarFactory = {
 				if (skill.cdRest > 0) {
 					return;
 				}
+				//console.log(current + ' ' + this.attributes.qidian);
 				if (skill.target == SkillTarget.Enemy) {
-				// 计算命中/会心/偏离/识破
-					var pianlilv = Math.max(target.attributes.mingzhongyaoqiu - attributes.mingzhonglv, 0);
-					var shipolv = Math.min(Math.max(target.attributes.wushuangyaoqiu - attributes.wushuanglv, 0), 100 - pianlilv);
-					var huixinlv = Math.min(attributes.huixinlv, 100 - pianlilv - shipolv);
-					var mingzhonglv = 100 - pianlilv - shipolv - huixinlv;
-					var roll = Math.random() * 100;
-					// 偏离
-					if (!skill.bimingzhong && roll < pianlilv) {
-						console.log(current / 100 + ":你的[" + skill.name + "]偏离了。");
-						target.attributes.damageTaken += 0;
-					}
-					// 识破
-					else if (!skill.bimingzhong && roll - pianlilv < shipolv) {
-						console.log(current / 100 + ":你的[" + skill.name + "]的" + skill.calcDamage(this, target, false) / 4 + "点伤害被[" + target.attributes.name + "]识破了。");
-						target.attributes.damageTaken += skill.calcDamage(this, target, false) / 4;
-					}
-					// 会心
-					else if (!skill.bubaoji && roll - pianlilv - shipolv < huixinlv) {
-						console.log(current / 100 + ":你的[" + skill.name + "]（会心）对[" + target.attributes.name + "]造成了" + skill.calcDamage(this, target, true) + "点伤害。");
-						target.attributes.damageTaken += skill.calcDamage(this, target, true);
-					}
-					else {
-						console.log(current / 100 + ":你的[" + skill.name + "]对[" + target.attributes.name + "]造成了" + skill.calcDamage(this, target, false) + "点伤害。");	
-						target.attributes.damageTaken += skill.calcDamage(this, target, false);
-					}
+					// Determine hit type
+					var hitType = CalcSkillHitType(skill, this, target);
+					// Calculate damage
+					var damage = CalcSkillDamage(skill, this, target, hitType);
+					// Log
+					Logger.logDamage(current, skill, this, target, damage, hitType);
+					// Taken damage
+					target.attributes.damageTaken += damage;
+					// After effect
+					skill.after(this, target, hitType);
 				}
 				else {
+					if (skill.after) {
+						skill.after(this, null, false, false);
+					}
 				}
+				// 
 				if (skill.gcdLevel != null) {
 					this.gcds[skill.gcdLevel] = skill.cdTime;
 				}
 				skill.cdRest = skill.cdTime;
-				if (skill.after) {
-					skill.after(this, null);
-				}
 			},
 			useOneFrame(current, targetAvatar) {
 				// 自动释放的技能，如平砍和被动
@@ -150,47 +137,48 @@ var PlayerFactory = {
 
 var playerAvatarAttributes = AvatarAttributesFactory.createAvatarAttributes(
 	{
-		jichugongji: 2613,
-		zuizhonggongji: 3886,
-		wuqishanghai: 487,
-		huixinlv: 32.7,
-		huixiaolv: 217.48,
-		pofangdengji: 1106,
-		jiasudengji: 0,
-		mingzhonglv: 110.09,
-		wushuanglv: 24.65,
+		basicAttackPower: 2613,
+		finalAttackPower: 3886,
+		weaponDamage: 487,
+		criticalHitChance: 0.327,
+		criticalHitDamage: 2.1748,
+		defenseBreakLevel: 1106,
+		hasteLevel: 0,
+		hitChance: 110.09,
+		precisionChance: 24.65,
 		qidian: 10
 	}
 );
 var targetAvatarAttributes = AvatarAttributesFactory.createAvatarAttributes(
 	{
 		name: "中级试炼木桩",
-		mingzhongyaoqiu: 105,
-		wushuangyaoqiu: 20,
-		fangyu: 25,
+		requiredHitChance: 105,
+		requiredPrecisionChance: 20,
+		defenseRate: 0.25,
 		damageTaken: 0
 	}
 );
 var xinfa = {
 	type: XinfaFactory.Taixujianyi,
 	skills: [
-		SkillFactory.getSkillByName("无我无剑"),
+		//SkillFactory.getSkillByName("无我无剑"),
 		SkillFactory.getSkillByName("三环套月"),
-		SkillFactory.getSkillByName("三柴剑法"),
-		SkillFactory.getSkillByName("被动回豆")
+		//SkillFactory.getSkillByName("三柴剑法"),
+		//SkillFactory.getSkillByName("被动回豆")
 	]
 }
 var playerAvatar = AvatarFactory.createAvatar(xinfa, playerAvatarAttributes);
 var targetAvatar = AvatarFactory.createAvatar(null, targetAvatarAttributes);
-var macro = MacroFactory.createMacro("/cast [qidian>7] 无我无剑\n/cast 三环套月\n");
+//var macro = MacroFactory.createMacro("/cast [qidian>7] 无我无剑\n/cast 三环套月\n");
+var macro = MacroFactory.createMacro("/cast 三环套月");
 var player = PlayerFactory.createPlayer(playerAvatar, macro);
 console.log(player.macro);
 
 var current = 0;
-var total = 6000;
+var total = 60000;
 while (current < total) {
 	player.useOneFrame(current, targetAvatar);
 	current ++;
 }
 
-console.log("你的DPS为：", targetAvatar.attributes.damageTaken / 60);
+console.log("你的DPS为：", targetAvatar.attributes.damageTaken / 600);

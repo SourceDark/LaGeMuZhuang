@@ -14,5 +14,9 @@ Xishu = {
 	Wushuangxishu : 25.69,
 };
 
-POFANG_XISHU = 36.34;
+DEFENSE_BREAK_COEF = 36.34;
 MAX_QIDIAN = 10;
+
+function randBetween(a, b) {
+	return a + (b - a) * Math.random();
+}
