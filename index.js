@@ -10,49 +10,30 @@ var XinfaFactory = {
 	}
 };
 var AvatarAttributesFactory = {
-	Huixinxishu : 41.43,
-	Huixiaoxishu : 15.06,
-	Pofangxishu : 36.34,
-	Mingzhongxishu : 34.25,
-	Wushuangxishu : 25.69,
-	createAvatarAttributes : function(jichugongji, ewaigongji, huixindengji, huixiaodengji, pofangdengji, jiasudengji, mingzhongdengji, wushuangdengji) {
-		var avatarAttributes = {
-			jichugongji: jichugongji,
-			ewaigongji: ewaigongji,
-			huixindengji: huixindengji,
-			huixiaodengji: huixiaodengji,
-			pofangdengji: pofangdengji,
-			jiasudengji: jiasudengji,
-			mingzhongdengji: mingzhongdengji,
-			wushuangdengji: wushuangdengji,
-			qidian: 10
-		}
-		return avatarAttributes;
+	createAvatarAttributes : function(paras) {
+		return paras;
 	}
 }
 var AvatarFactory = {
 	createAvatar : function(xinfa, attributes) {
-		if (XinfaFactory.isXinfaValid(xinfa.type) == false) {
-			return null;
-		}
 		var avatar = {
 			xinfa : xinfa,
 			attributes : attributes,
 			autoSkills : [],
             gcds : [0, 0],
-			useMacro(current, macro) {
+			useMacro(current, targetAvatar, macro) {
 				for (var key in macro.orders) {
 					var order = macro.orders[key];
-					this.useOrder(current, order);
+					this.useOrder(current, targetAvatar, order);
 				}
 			},
-			useOrder(current, order) {
+			useOrder(current, targetAvatar, order) {
 				if (!evalConditionNode(order.condition, this, null)) {
 					return;
 				}
-				this.useSkill(current, order.skill);
+				this.useSkill(current, targetAvatar, order.skill);
 			},
-			useSkill(current, skill) {
+			useSkill(current, target, skill) {
 				// 检查GCD
 				if (skill.gcdLevel != null && this.gcds[skill.gcdLevel] > 0) {
 					return;
@@ -61,12 +42,34 @@ var AvatarFactory = {
 				if (skill.cdRest > 0) {
 					return;
 				}
-				// 输出日志
-				if (skill.type == SkillType.Normal) {
-					console.log(current / 100 + ":" + skill.name);
+				if (skill.target == SkillTarget.Enemy) {
+				// 计算命中/会心/偏离/识破
+					var pianlilv = Math.max(target.attributes.mingzhongyaoqiu - attributes.mingzhonglv, 0);
+					var shipolv = Math.min(Math.max(target.attributes.wushuangyaoqiu - attributes.wushuanglv, 0), 100 - pianlilv);
+					var huixinlv = Math.min(attributes.huixinlv, 100 - pianlilv - shipolv);
+					var mingzhonglv = 100 - pianlilv - shipolv - huixinlv;
+					var roll = Math.random() * 100;
+					// 偏离
+					if (!skill.bimingzhong && roll < pianlilv) {
+						console.log(current / 100 + ":你的[" + skill.name + "]偏离了。");
+						target.attributes.damageTaken += 0;
+					}
+					// 识破
+					else if (!skill.bimingzhong && roll - pianlilv < shipolv) {
+						console.log(current / 100 + ":你的[" + skill.name + "]的" + skill.calcDamage(this, target, false) / 4 + "点伤害被[" + target.attributes.name + "]识破了。");
+						target.attributes.damageTaken += skill.calcDamage(this, target, false) / 4;
+					}
+					// 会心
+					else if (!skill.bubaoji && roll - pianlilv - shipolv < huixinlv) {
+						console.log(current / 100 + ":你的[" + skill.name + "]（会心）对[" + target.attributes.name + "]造成了" + skill.calcDamage(this, target, true) + "点伤害。");
+						target.attributes.damageTaken += skill.calcDamage(this, target, true);
+					}
+					else {
+						console.log(current / 100 + ":你的[" + skill.name + "]对[" + target.attributes.name + "]造成了" + skill.calcDamage(this, target, false) + "点伤害。");	
+						target.attributes.damageTaken += skill.calcDamage(this, target, false);
+					}
 				}
-				if (skill.type == SkillType.Qidian) {
-					console.log(current / 100 + ":" + skill.name + "(" + this.attributes.qidian + ")");	
+				else {
 				}
 				if (skill.gcdLevel != null) {
 					this.gcds[skill.gcdLevel] = skill.cdTime;
@@ -76,12 +79,12 @@ var AvatarFactory = {
 					skill.after(this, null);
 				}
 			},
-			useOneFrame(current) {
+			useOneFrame(current, targetAvatar) {
 				// 自动释放的技能，如平砍和被动
 				for (var key in this.xinfa.skills) {
 					var skill = this.xinfa.skills[key];
 					if (skill.type == SkillType.Auto) {
-						this.useSkill(current, skill);
+						this.useSkill(current, targetAvatar, skill);
 					}
 				}
 				// GCD转动
@@ -134,16 +137,40 @@ var PlayerFactory = {
 		var player = {
 			avatar : avatar,
 			macro : macro,
-			useOneFrame : function(current) {
-                avatar.useMacro(current, macro);
-                avatar.useOneFrame(current);
+			useOneFrame : function(current, targetAvatar) {
+                if (macro != null) {
+                	avatar.useMacro(current, targetAvatar, macro);
+                }
+                avatar.useOneFrame(current, targetAvatar);
 			}
 		}
 		return player;
 	}
 }
 
-var avatarAttributes = AvatarAttributesFactory.createAvatarAttributes(2000, 1000, 1000, 5000, 1000, 0, 200, 200);
+var playerAvatarAttributes = AvatarAttributesFactory.createAvatarAttributes(
+	{
+		jichugongji: 2613,
+		zuizhonggongji: 3886,
+		wuqishanghai: 487,
+		huixinlv: 32.7,
+		huixiaolv: 217.48,
+		pofangdengji: 1106,
+		jiasudengji: 0,
+		mingzhonglv: 110.09,
+		wushuanglv: 24.65,
+		qidian: 10
+	}
+);
+var targetAvatarAttributes = AvatarAttributesFactory.createAvatarAttributes(
+	{
+		name: "中级试炼木桩",
+		mingzhongyaoqiu: 105,
+		wushuangyaoqiu: 20,
+		fangyu: 25,
+		damageTaken: 0
+	}
+);
 var xinfa = {
 	type: XinfaFactory.Taixujianyi,
 	skills: [
@@ -153,14 +180,17 @@ var xinfa = {
 		SkillFactory.getSkillByName("被动回豆")
 	]
 }
-var avatar = AvatarFactory.createAvatar(xinfa, avatarAttributes);
+var playerAvatar = AvatarFactory.createAvatar(xinfa, playerAvatarAttributes);
+var targetAvatar = AvatarFactory.createAvatar(null, targetAvatarAttributes);
 var macro = MacroFactory.createMacro("/cast [qidian>7] 无我无剑\n/cast 三环套月\n");
-var player = PlayerFactory.createPlayer(avatar, macro);
+var player = PlayerFactory.createPlayer(playerAvatar, macro);
 console.log(player.macro);
 
 var current = 0;
 var total = 6000;
 while (current < total) {
-	player.useOneFrame(current);
+	player.useOneFrame(current, targetAvatar);
 	current ++;
 }
+
+console.log("你的DPS为：", targetAvatar.attributes.damageTaken / 60);
