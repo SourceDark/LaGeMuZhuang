@@ -128,13 +128,13 @@ var AvatarFactory = {
 					var buff = target.buffs[key];
 					buff.duration = Math.max(buff.duration - TIME_PER_FRAME, 0);
 					if (buff.duration > 0) {
-						bufflist.push(buff);
+						debufflist.push(buff);
 					}
 					else {
-						Logger.logRemoveBuff(buff);
+						Logger.logRemoveTargetBuff(buff, this);
 					}
 				}
-				this.buffs = bufflist;
+				target.buffs = debufflist;
 			},
 			getBuffByName(buffname) {
 		        for (var key in this.buffs) {
@@ -145,7 +145,7 @@ var AvatarFactory = {
 		        }
 		        return null;
 			},
-			addBuff(buffname, levels, attributes) {
+			addBuff(buffname, levels, avatar) {
 				if (typeof(levels)==='undefined') levels = 1;
 				buff = this.getBuffByName(buffname);
 				if (buff == null) {
@@ -155,10 +155,16 @@ var AvatarFactory = {
 					}
 					this.buffs.push(buff);
 					buff.level = 0;
-					Logger.logAddBuff(buff);
+					Logger.logAddBuff(buff, avatar);
 				}
 				buff.duration = buff.duration_max;
 				buff.level = Math.min(buff.level + levels, buff.level_max);
+				if (avatar != null) {
+					buff.attributes = {
+						attackPower: avatar.attributes.finalAttackPower + avatar.attributes.finalAttackPower * avatar.getExtraAttributes().;
+						criticalHitChance: avatar.attributes.criticalHitChance + 
+					}
+				}
 			},
 			removeBuff(buffname) {
 				var bufflist = [];
@@ -246,7 +252,7 @@ var PlayerFactory = {
 }
 
 var sumDPS = 0;
-var totalTimes = 20;
+var totalTimes = 1;
 for (var i = 0; i < totalTimes; i++) {
 	var playerAvatarAttributes = AvatarAttributesFactory.createAvatarAttributes(
 		{

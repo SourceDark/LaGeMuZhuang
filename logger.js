@@ -26,14 +26,26 @@ Logger = {
 			console.log(current.toFixed(2) + ":" + errorText);
 		}
 	},
-	logAddBuff: function(buff) {
+	logAddBuff: function(buff, avatar) {
 		if (LOG_SKILL_DETAIL) {
-			console.log(current.toFixed(2) + ":你获得了效果[" + buff.name + "]。");
+			var target;
+			if (avatar == null || avatar.name == null) {
+				target = "你";
+			}
+			else {
+				target = "[" + avatar.name + "]";
+			}
+			console.log(current.toFixed(2) + ":" + target + "获得了效果[" + buff.name + "]。");
 		}
 	},
 	logRemoveBuff: function(buff) {
 		if (LOG_SKILL_DETAIL) {
 			console.log(current.toFixed(2) + ":效果[" + buff.name + "]从你身上消失了。");	
+		}
+	},
+	logRemoveTargetBuff: function(buff, avatar) {
+		if (LOG_SKILL_DETAIL) {
+			console.log(current.toFixed(2) + ":效果[" + buff.name + "]从[" + avatar.name + "]身上消失了。");	
 		}
 	}
 }

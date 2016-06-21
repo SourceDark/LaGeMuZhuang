@@ -169,7 +169,7 @@ var SkillFactory = {
                 }
                 // 奇穴：叠刃
                 if (hitType == HitType.Critical) {
-                    //target.addBuff("叠刃", 1, avatar.attributes);
+                    target.addBuff("叠刃", 1, avatar);
                 }
             }
         },
