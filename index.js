@@ -19,7 +19,9 @@ var AvatarFactory = {
 		var avatar = {
 			xinfa : xinfa,
 			attributes : attributes,
-			autoSkills : [],
+			buffs : [],
+			castingSkill: null,
+			castingDuration: 0,
             gcds : [0, 0],
 			useMacro(current, targetAvatar, macro) {
 				for (var key in macro.orders) {
@@ -31,9 +33,13 @@ var AvatarFactory = {
 				if (!evalConditionNode(order.condition, this, null)) {
 					return;
 				}
-				this.useSkill(current, targetAvatar, order.skill);
+				this.castSkill(current, targetAvatar, order.skill);
 			},
-			useSkill(current, target, skill) {
+			castSkill(current, target, skill) {
+				// Casting protection
+				if (this.castingSkill != null) {
+					return;
+				}
 				// 检查GCD
 				if (skill.gcdLevel != null && this.gcds[skill.gcdLevel] > 0) {
 					return;
@@ -42,7 +48,20 @@ var AvatarFactory = {
 				if (skill.cdRest > 0) {
 					return;
 				}
-				//console.log(current + ' ' + this.attributes.qidian);
+				if (skill.type == SkillType.Casting) {
+					this.castingSkill = skill;
+					this.castingDuration = skill.getCastingDuration();
+					Logger.logCasting(current, skill);
+				}
+				else {
+					this.useSkill(current, target, skill);
+				}
+				// Trigger GCD
+				if (skill.gcdLevel != null) {
+					this.gcds[skill.gcdLevel] = 150;
+				}
+			},
+			useSkill(current, target, skill) {
 				if (skill.target == SkillTarget.Enemy) {
 					// Determine hit type
 					var hitType = CalcSkillHitType(skill, this, target);
@@ -57,21 +76,28 @@ var AvatarFactory = {
 				}
 				else {
 					if (skill.after) {
-						skill.after(this, null, false, false);
+						skill.after(this, target, hitType);
 					}
 				}
-				// 
-				if (skill.gcdLevel != null) {
-					this.gcds[skill.gcdLevel] = skill.cdTime;
-				}
-				skill.cdRest = skill.cdTime;
+				// Trigger CD
+				skill.cdRest = skill.getColdTime();
 			},
-			useOneFrame(current, targetAvatar) {
+			useOneFrame(current, target) {
 				// 自动释放的技能，如平砍和被动
-				for (var key in this.xinfa.skills) {
-					var skill = this.xinfa.skills[key];
-					if (skill.type == SkillType.Auto) {
-						this.useSkill(current, targetAvatar, skill);
+				if (this.castingSkill == null) {
+					for (var key in this.xinfa.skills) {
+						var skill = this.xinfa.skills[key];
+						if (skill.type == SkillType.Auto) {
+							this.castSkill(current, target, skill);
+						}
+					}
+				}
+				// Casting
+				if (this.castingSkill != null) {
+					this.castingDuration = Math.max(this.castingDuration - 1, 0);
+					if (this.castingDuration == 0) {
+						this.useSkill(current, target, this.castingSkill);
+						this.castingSkill = null;
 					}
 				}
 				// GCD转动
@@ -83,6 +109,52 @@ var AvatarFactory = {
 					var skill = this.xinfa.skills[key];
 					skill.cdRest = Math.max(skill.cdRest - 1, 0);
 				}
+				// buffs
+				var bufflist = [];
+				for (var key in this.buffs) {
+					var buff = this.buffs[key];
+					buff.duration = Math.max(buff.duration - 1, 0);
+					if (buff.duration > 0) {
+						bufflist.push(buff);
+					}
+				}
+				this.buffs = bufflist;
+			},
+			getBuffByName(buffname) {
+		        for (var key in this.buffs) {
+		            var buff = this.buffs[key];
+		            if (buff.name === buffname) {
+		                return buff;
+		            }
+		        }
+		        return null;
+			},
+			addBuff(buffname) {
+				buff = BuffFactory.getBuffByName(buffname);
+				if (buff != null) {
+					this.buffs.push(buff);
+					buff.level = 1;
+					buff.duration = buff.duration_max;
+				}
+				else {
+					Logger.logError("Wrong buffname :" + buffname);
+				}
+			},
+			getExtraAttributes() {
+				var ret = {
+					criticalHitChance: 0,
+					criticalHitDamage: 0
+				}
+		        for (var key in this.buffs) {
+		            var buff = this.buffs[key];
+		            if (buff.effects.criticalHitChance != null) {
+		            	ret.criticalHitChance += buff.effects.criticalHitChance;
+		            }
+		            if (buff.effects.criticalHitDamage != null) {
+		            	ret.criticalHitDamage += buff.effects.criticalHitDamage;
+		            }
+		        }
+		        return ret;
 			}
 		}
 		return avatar;
@@ -155,22 +227,27 @@ var targetAvatarAttributes = AvatarAttributesFactory.createAvatarAttributes(
 		requiredHitChance: 105,
 		requiredPrecisionChance: 20,
 		defenseRate: 0.25,
-		damageTaken: 0
+		damageTaken: 0,
+		hp: 5000000,
+		currentHp: 5000000,
 	}
 );
 var xinfa = {
 	type: XinfaFactory.Taixujianyi,
 	skills: [
-		//SkillFactory.getSkillByName("无我无剑"),
+		SkillFactory.getSkillByName("无我无剑"),
 		SkillFactory.getSkillByName("三环套月"),
-		//SkillFactory.getSkillByName("三柴剑法"),
-		//SkillFactory.getSkillByName("被动回豆")
+		SkillFactory.getSkillByName("三柴剑法"),
+		SkillFactory.getSkillByName("被动回豆"),
+		SkillFactory.getSkillByName("天地无极"),
+		SkillFactory.getSkillByName("八荒归元"),
+		SkillFactory.getSkillByName("碎星辰"),
 	]
 }
 var playerAvatar = AvatarFactory.createAvatar(xinfa, playerAvatarAttributes);
 var targetAvatar = AvatarFactory.createAvatar(null, targetAvatarAttributes);
-//var macro = MacroFactory.createMacro("/cast [qidian>7] 无我无剑\n/cast 三环套月\n");
-var macro = MacroFactory.createMacro("/cast 三环套月");
+var macro = MacroFactory.createMacro("/cast [qidian>7] 无我无剑\n/cast [nobuff:碎星辰] 碎星辰\n/cast 八荒归元\n/cast 天地无极\n/cast 三环套月\n");
+//var macro = MacroFactory.createMacro("/cast 三环套月");
 var player = PlayerFactory.createPlayer(playerAvatar, macro);
 console.log(player.macro);
 

@@ -1,4 +1,15 @@
+var ConditionNodeType = {
+	Smaller: 0,
+	Greater: 1,
+	Qidian: 2,
+	Number: 3,
+	And: 4,
+	Or: 5,
+	NoBuff: 6,
+};
+
 function parseConditionText(conditionText) {
+	//console.log(conditionText);
 	if (conditionText == null) {
 		return null;
 	}
@@ -18,6 +29,16 @@ function parseConditionText(conditionText) {
 	if (conditionText == "qidian") {
 		return {
 			type: ConditionNodeType.Qidian
+		}
+	}
+	if (conditionText.indexOf(':') != -1) {
+		var leftText = conditionText.substring(0, conditionText.indexOf(':'));
+		var rightText = conditionText.substring(conditionText.indexOf(':') + 1, conditionText.length);
+		if (leftText == "nobuff") {
+			return {
+				type: ConditionNodeType.NoBuff,
+				buffname: rightText,
+			}
 		}
 	}
 	return {
@@ -45,6 +66,9 @@ function evalConditionNode(conditionNode, avatar, target) {
 	}
 	if (conditionNode.type == ConditionNodeType.Or) {
 		return evalConditionNode(conditionNode.left, avatar, target) || evalConditionNode(conditionNode.right, avatar, target);
+	}
+	if (conditionNode.type == ConditionNodeType.NoBuff) {
+		return (avatar.getBuffByName(conditionNode.buffname) == null);
 	}
 	return true;
 }

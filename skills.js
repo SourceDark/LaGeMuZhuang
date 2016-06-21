@@ -3,6 +3,7 @@ SkillType = {
     Auto: 1,
     Qidian: 2,
     Qixue: 3,
+    Casting: 4,
 };
 SkillTarget = {
     Enemy: 0,
@@ -21,8 +22,10 @@ var SkillFactory = {
             name: "三环套月",
             target: SkillTarget.Enemy,
             cdRest: 0,
-            cdTime: 200,
             gcdLevel: 0,
+            getColdTime: function(avatar, target) {
+                return 200;
+            },
             getWeaponCoef: function(avatar, target) {
                 return 1.0;
             },
@@ -40,11 +43,11 @@ var SkillFactory = {
             },
             getCriticalHitChance: function(avatar, target) {
                 // 奇穴：心固 + 秘籍
-                return avatar.attributes.criticalHitChance + 0.02 + 0.03 + 0.04 + 0.1;
+                return avatar.attributes.criticalHitChance + avatar.getExtraAttributes().criticalHitChance + 0.02 + 0.03 + 0.04 + 0.1;
             },
             getCriticalHitDamage: function(avatar, target) {
                 // 奇穴：心固
-                return avatar.attributes.criticalHitDamage + 0.1;
+                return avatar.attributes.criticalHitDamage + avatar.getExtraAttributes().criticalHitDamage + 0.1;
             },
             getDefenseBreakRate: function(avatar, target) {
                 return avatar.attributes.defenseBreakLevel / DEFENSE_BREAK_COEF / 100;
@@ -56,96 +59,257 @@ var SkillFactory = {
             getTargetDefenseRate: function(avatar, target) {
                 return target.attributes.defenseRate;
             },
-            after: function(avatar, target, huixin, pianli) {
+            after: function(avatar, target, hitType) {
                 avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 2);
                 // 奇穴：深埋
-                if (huixin) {
+                if (hitType == HitType.Critical) {
                     avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 2);
                 }
             }
         },
         {
-        	type: SkillType.Auto,
+            type: SkillType.Auto,
             name: "三柴剑法",
             target: SkillTarget.Enemy,
-            weaponCoef: 1.2,
-            skillCoef: 0.1572265625,
-            basicDamage: 0.0,
-            cdTime: 131.25,
             cdRest: 0,
-            after: function(avatar, target, huixin, pianli) {
-                if (huixin) {
+            getColdTime: function(avatar, target) {
+                return 131.25;
+            },
+            getWeaponCoef: function(avatar, target) {
+                return 1.2;
+            },
+            getSkillCoef: function(avatar, target) {
+                return 0.1572265625;
+            },
+            getBasicDamage: function(avatar, target) {
+                return 0;
+            },
+            getWeaponDamage: function(avatar, target) {
+                return avatar.attributes.weaponDamage;
+            },
+            getFinalAttackPower: function(avatar, target) {
+                return avatar.attributes.finalAttackPower;
+            },
+            getCriticalHitChance: function(avatar, target) {
+                return avatar.attributes.criticalHitChance + avatar.getExtraAttributes().criticalHitChance;
+            },
+            getCriticalHitDamage: function(avatar, target) {
+                return avatar.attributes.criticalHitDamage + avatar.getExtraAttributes().criticalHitDamage;
+            },
+            getDefenseBreakRate: function(avatar, target) {
+                return avatar.attributes.defenseBreakLevel / DEFENSE_BREAK_COEF / 100;
+            },
+            getGlobalBenefit: function(avatar, target) {
+                return 1.0;
+            },
+            getTargetDefenseRate: function(avatar, target) {
+                return target.attributes.defenseRate;
+            },
+            after: function(avatar, target, hitType) {
+                // 奇穴：深埋
+                if (hitType == HitType.Critical) {
                     avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 2);
                 }
-            },
-            calcDamage: function(avatar, target, huixin) {
-                var damage = (avatar.attributes.wuqishanghai * this.weaponCoef + this.basicDamage + (this.skillCoef - this.weaponCoef / 10) * avatar.attributes.zuizhonggongji) * 1.31 * (1 - target.attributes.fangyu / 100);
-                if (huixin) damage = damage * avatar.attributes.huixiaolv / 100;
-                return damage;
             }
         },
         {
         	type: SkillType.Qidian,
         	name: "无我无剑",
             target: SkillTarget.Enemy,
-        	weaponCoef: 2.0,
-        	skillCoefQidian10: 1.63125,
-        	skillCoefQidian1: 0.3376,
-        	basicDamageQidian10: 235.5, // 224 ~ 247
-        	basicDamageQidian1: 23, // 22 ~ 24
-        	cdTime: 150,
             cdRest: 0,
         	gcdLevel: 0,
+            getColdTime: function(avatar, target) {
+                return 0;
+            },
+            getWeaponCoef: function(avatar, target) {
+                return 2.0;
+            },
             getSkillCoef: function(avatar, target) {
-                return this.skillCoefQidian1 + (this.skillCoefQidian10 - this.skillCoefQidian1) / 9 * (avatar.attributes.qidian - 1);
+                var skillCoefQidian1 = 0.3376;
+                var skillCoefQidian10 = 1.63125;
+                return skillCoefQidian1 + (skillCoefQidian10 - skillCoefQidian1) / 9 * (avatar.attributes.qidian - 1);
             },
             getBasicDamage: function(avatar, target) {
-                return this.basicDamageQidian1 + (this.basicDamageQidian10 - this.basicDamageQidian1) / 9 * (avatar.attributes.qidian - 1);
+                var basicDamageLeftQidian1 = 22;
+                var basicDamageLeftQidian10 = 224;
+                var basicDamageLeft = basicDamageLeftQidian1 + (basicDamageLeftQidian10 - basicDamageLeftQidian1) / 9 * (avatar.attributes.qidian - 1);
+                var basicDamageRightQidian1 = 24;
+                var basicDamageRightQidian10 = 247;
+                var basicDamageRight = basicDamageRightQidian1 + (basicDamageRightQidian10 - basicDamageRightQidian1) / 9 * (avatar.attributes.qidian - 1);
+                return randBetween(basicDamageLeft, basicDamageRight);
             },
-            getHuixinlv: function(avatar, target) {
-                // 奇穴 + 秘籍
-                return avatar.attributes.huixinlv + 3 + 4;
+            getWeaponDamage: function(avatar, target) {
+                return avatar.attributes.weaponDamage;
             },
-            getHuixiaolv: function(avatar, target) {
-                // 奇穴
-                return avatar.attributes.huixiaolv;
+            getFinalAttackPower: function(avatar, target) {
+                return avatar.attributes.finalAttackPower;
             },
-            getZengshang: function(avatar, target) {
+            getCriticalHitChance: function(avatar, target) {
+                // 秘籍
+                return avatar.attributes.criticalHitChance + avatar.getExtraAttributes().criticalHitChance + 0.03 + 0.04;
+            },
+            getCriticalHitDamage: function(avatar, target) {
+                return avatar.attributes.criticalHitDamage + avatar.getExtraAttributes().criticalHitDamage;
+            },
+            getDefenseBreakRate: function(avatar, target) {
+                return avatar.attributes.defenseBreakLevel / DEFENSE_BREAK_COEF / 100;
+            },
+            getGlobalBenefit: function(avatar, target) {
                 // 秘籍
                 return 1.09;
             },
-            after: function(avatar, target, huixin, pianli) {
+            getTargetDefenseRate: function(avatar, target) {
+                return target.attributes.defenseRate;
+            },
+            after: function(avatar, target, hitType) {
                 avatar.attributes.qidian = 0;
-                if (huixin) {
+                // 奇穴：深埋
+                if (hitType == HitType.Critical) {
                     avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 2);
                 }
-            },
-            calcDamage: function(avatar, target, huixin) {
-                // 基础伤害
-                var damage = (avatar.attributes.wuqishanghai * this.weaponCoef + this.getBasicDamage(avatar, target) + (this.getSkillCoef(avatar, target) - this.weaponCoef / 10) * avatar.attributes.zuizhonggongji) * 1.31 * (1 - target.attributes.fangyu / 100);
-                // 会心伤害
-                if (huixin) damage = damage * this.getHuixiaolv(avatar, target) / 100;
-                // 增益伤害
-                damage = damage * this.getZengshang(avatar, target);
-                // 返回
-                return damage;
             }
         },
         {
             type: SkillType.Auto,
             name: "被动回豆",
             target: SkillTarget.Self,
-            cdTime: 100,
             cdRest: 0,
-            bimingzhong: true,
-            bubaoji: true,
+            getColdTime: function(avatar, target) {
+                return 100;
+            },
             after: function(avatar, target) {
                 avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 1);
-            },
-            calcDamage: function(avatar, target, huixin) {
-                return 0;
             }
-        }
+        },
+        {
+            type: SkillType.Normal,
+            name: "八荒归元",
+            target: SkillTarget.Enemy,
+            cdRest: 0,
+            gcdLevel: 0,
+            getColdTime: function(avatar, target) {
+                return 1500;
+            },
+            getWeaponCoef: function(avatar, target) {
+                return 2.0;
+            },
+            getSkillCoef: function(avatar, target) {
+                var skillCoefHP0 = 2;
+                var skillCoefHP100 = 1.1876;
+                return skillCoefHP0 + (skillCoefHP100 - skillCoefHP0) * (target.attributes.currentHp / target.attributes.hp);
+            },
+            getBasicDamage: function(avatar, target) {
+                var basicDamageLeftHP0 = 690;
+                var basicDamageLeftHP100 = 23;
+                var basicDamageLeft = basicDamageLeftHP0 + (basicDamageLeftHP100 - basicDamageLeftHP0) * (target.attributes.currentHp / target.attributes.hp);
+                var basicDamageRightHP0 = 760;
+                var basicDamageRightHP100 = 25;
+                var basicDamageRight = basicDamageRightHP0 + (basicDamageRightHP100 - basicDamageRightHP0) * (target.attributes.currentHp / target.attributes.hp);
+                return randBetween(basicDamageLeft, basicDamageRight);
+            },
+            getWeaponDamage: function(avatar, target) {
+                return avatar.attributes.weaponDamage;
+            },
+            getFinalAttackPower: function(avatar, target) {
+                return avatar.attributes.finalAttackPower;
+            },
+            getCriticalHitChance: function(avatar, target) {
+                return avatar.attributes.criticalHitChance + avatar.getExtraAttributes().criticalHitChance;
+            },
+            getCriticalHitDamage: function(avatar, target) {
+                return avatar.attributes.criticalHitDamage + avatar.getExtraAttributes().criticalHitDamage;
+            },
+            getDefenseBreakRate: function(avatar, target) {
+                return avatar.attributes.defenseBreakLevel / DEFENSE_BREAK_COEF / 100;
+            },
+            getGlobalBenefit: function(avatar, target) {
+                // 秘籍 + 未知二段伤害
+                return 1.12 * 1.48;
+            },
+            getTargetDefenseRate: function(avatar, target) {
+                return target.attributes.defenseRate;
+            },
+            after: function(avatar, target, hitType) {
+                avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 2);
+                // 秘籍
+                if (hitType != HitType.Miss) {
+                    avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 1);
+                }
+                // 奇穴：深埋
+                if (hitType == HitType.Critical) {
+                    avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 2);
+                }
+            }
+        },
+        {
+            type: SkillType.Normal,
+            name: "天地无极",
+            target: SkillTarget.Enemy,
+            cdRest: 0,
+            gcdLevel: 0,
+            getColdTime: function(avatar, target) {
+                // 奇穴：风逝
+                return 600;
+            },
+            getWeaponCoef: function(avatar, target) {
+                return 0;
+            },
+            getSkillCoef: function(avatar, target) {
+                return 0.925;
+            },
+            getBasicDamage: function(avatar, target) {
+                return randBetween(129, 142);
+            },
+            getWeaponDamage: function(avatar, target) {
+                return avatar.attributes.weaponDamage;
+            },
+            getFinalAttackPower: function(avatar, target) {
+                return avatar.attributes.finalAttackPower;
+            },
+            getCriticalHitChance: function(avatar, target) {
+                // 奇穴：风逝
+                return avatar.attributes.criticalHitChance + avatar.getExtraAttributes().criticalHitChance + 0.1;
+            },
+            getCriticalHitDamage: function(avatar, target) {
+                return avatar.attributes.criticalHitDamage + avatar.getExtraAttributes().criticalHitDamage;
+            },
+            getDefenseBreakRate: function(avatar, target) {
+                return avatar.attributes.defenseBreakLevel / DEFENSE_BREAK_COEF / 100;
+            },
+            getGlobalBenefit: function(avatar, target) {
+                return 1.00;
+            },
+            getTargetDefenseRate: function(avatar, target) {
+                return target.attributes.defenseRate;
+            },
+            after: function(avatar, target, hitType) {
+                avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 2);
+                // 奇穴：无欲
+                if (hitType == HitType.Critical) {
+                    SkillFactory.getSkillByName("八荒归元").cdRest = 0;
+                }
+                // 奇穴：深埋
+                if (hitType == HitType.Critical) {
+                    avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 2);
+                }
+            }
+        },
+        {
+            type: SkillType.Casting,
+            name: "碎星辰",
+            target: SkillTarget.Self,
+            cdRest: 0,
+            gcdLevel: 0,
+            getColdTime: function(avatar, target) {
+                return 1000;
+            },
+            getCastingDuration:function(avatar, target) {
+                return 100;
+            },
+            after: function(avatar, target) {
+                avatar.addBuff("碎星辰");
+            }
+        },
     ],
     getSkillByName : function(name) {
         for (var key in this.skills) {
@@ -164,9 +328,9 @@ var SkillFactory = {
 function CalcSkillHitType(skill, avatar, target) {
     // Caculate the table
     var missChance = Math.max(target.attributes.requiredHitChance - avatar.attributes.hitChance, 0);
-    var blockChance = Math.min(Math.max(target.attributes.requiredPrecisionChange - avatar.attributes.precisionChance, 0), 1 - missChance);
-    var criticalHitChange = Math.min(avatar.attributes.criticalHitChange, 1 - missChance - blockChance);
-    var hitChance = 1 - missChance - blockChance - criticalHitChange;
+    var blockChance = Math.min(Math.max(target.attributes.requiredPrecisionChance - avatar.attributes.precisionChance, 0), 1 - missChance);
+    var criticalHitChance = Math.min(skill.getCriticalHitChance(avatar, target), 1 - missChance - blockChance);
+    var hitChance = 1 - missChance - blockChance - criticalHitChance;
     // Roll once
     var roll = Math.random();
     if (roll < missChance) {
@@ -175,7 +339,7 @@ function CalcSkillHitType(skill, avatar, target) {
     if (roll < missChance + blockChance) {
         return HitType.Block;
     }
-    if (roll < missChance + blockChance + criticalHitChange) {
+    if (roll < missChance + blockChance + criticalHitChance) {
         return HitType.Critical;
     }
     return HitType.Hit;
@@ -192,12 +356,12 @@ function CalcSkillDamage(skill, avatar, target, hitType) {
     // Basic damage
     var weaponDamage = skill.getWeaponCoef(avatar, target) * skill.getWeaponDamage(avatar, target);
     var skillDamage = (skill.getSkillCoef(avatar, target) - skill.getWeaponCoef(avatar, target) / 10) * skill.getFinalAttackPower(avatar, target);
-    var damage = skill.getBasicDamage() + weaponDamage + skillDamage;
+    var damage = skill.getBasicDamage(avatar, target) + weaponDamage + skillDamage;
     // Defense break
     damage = damage * (1 + skill.getDefenseBreakRate(avatar, target));
     // Crit damage
     if (hitType == HitType.Critical) {
-        damage = damage * skill.getCritHitDamage(avatar, target) / 100;
+        damage = damage * skill.getCriticalHitDamage(avatar, target);
     }
     // Block damage
     if (hitType == HitType.Block) {
