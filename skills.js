@@ -167,6 +167,10 @@ var SkillFactory = {
                 if (hitType == HitType.Critical) {
                     avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 2);
                 }
+                // 奇穴：叠刃
+                if (hitType == HitType.Critical) {
+                    //target.addBuff("叠刃", 1, avatar.attributes);
+                }
             }
         },
         {

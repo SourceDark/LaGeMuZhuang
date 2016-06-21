@@ -122,6 +122,19 @@ var AvatarFactory = {
 					}
 				}
 				this.buffs = bufflist;
+
+				var debufflist = [];
+				for (var key in target.buffs) {
+					var buff = target.buffs[key];
+					buff.duration = Math.max(buff.duration - TIME_PER_FRAME, 0);
+					if (buff.duration > 0) {
+						bufflist.push(buff);
+					}
+					else {
+						Logger.logRemoveBuff(buff);
+					}
+				}
+				this.buffs = bufflist;
 			},
 			getBuffByName(buffname) {
 		        for (var key in this.buffs) {
@@ -132,7 +145,7 @@ var AvatarFactory = {
 		        }
 		        return null;
 			},
-			addBuff(buffname, levels) {
+			addBuff(buffname, levels, attributes) {
 				if (typeof(levels)==='undefined') levels = 1;
 				buff = this.getBuffByName(buffname);
 				if (buff == null) {
@@ -233,7 +246,7 @@ var PlayerFactory = {
 }
 
 var sumDPS = 0;
-var totalTimes = 1;
+var totalTimes = 20;
 for (var i = 0; i < totalTimes; i++) {
 	var playerAvatarAttributes = AvatarAttributesFactory.createAvatarAttributes(
 		{

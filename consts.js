@@ -12,7 +12,7 @@ MAX_QIDIAN = 10;
 
 TIME_PER_FRAME = 0.01;
 
-LOG_SKILL_DETAIL = true;
+LOG_SKILL_DETAIL = false;
 
 function randBetween(a, b) {
 	return a + (b - a) * Math.random();
