@@ -24,7 +24,7 @@ var SkillFactory = {
             cdRest: 0,
             gcdLevel: 0,
             getColdTime: function(avatar, target) {
-                return 200;
+                return 2;
             },
             getWeaponCoef: function(avatar, target) {
                 return 1.0;
@@ -39,7 +39,7 @@ var SkillFactory = {
                 return avatar.attributes.weaponDamage;
             },
             getFinalAttackPower: function(avatar, target) {
-                return avatar.attributes.finalAttackPower;
+                return avatar.attributes.finalAttackPower + avatar.attributes.basicAttackPower * avatar.getExtraAttributes().basicAttckPowerMultiply;
             },
             getCriticalHitChance: function(avatar, target) {
                 // 奇穴：心固 + 秘籍
@@ -50,7 +50,7 @@ var SkillFactory = {
                 return avatar.attributes.criticalHitDamage + avatar.getExtraAttributes().criticalHitDamage + 0.1;
             },
             getDefenseBreakRate: function(avatar, target) {
-                return avatar.attributes.defenseBreakLevel / DEFENSE_BREAK_COEF / 100;
+                return avatar.attributes.defenseBreakLevel * (1 + avatar.getExtraAttributes().defenseBreakMultiply) / DEFENSE_BREAK_COEF / 100;
             },
             getGlobalBenefit: function(avatar, target) {
                 // 秘籍
@@ -73,7 +73,7 @@ var SkillFactory = {
             target: SkillTarget.Enemy,
             cdRest: 0,
             getColdTime: function(avatar, target) {
-                return 131.25;
+                return 1.3125;
             },
             getWeaponCoef: function(avatar, target) {
                 return 1.2;
@@ -88,7 +88,7 @@ var SkillFactory = {
                 return avatar.attributes.weaponDamage;
             },
             getFinalAttackPower: function(avatar, target) {
-                return avatar.attributes.finalAttackPower;
+                return avatar.attributes.finalAttackPower + avatar.attributes.basicAttackPower * avatar.getExtraAttributes().basicAttckPowerMultiply;
             },
             getCriticalHitChance: function(avatar, target) {
                 return avatar.attributes.criticalHitChance + avatar.getExtraAttributes().criticalHitChance;
@@ -97,7 +97,7 @@ var SkillFactory = {
                 return avatar.attributes.criticalHitDamage + avatar.getExtraAttributes().criticalHitDamage;
             },
             getDefenseBreakRate: function(avatar, target) {
-                return avatar.attributes.defenseBreakLevel / DEFENSE_BREAK_COEF / 100;
+                return avatar.attributes.defenseBreakLevel * (1 + avatar.getExtraAttributes().defenseBreakMultiply) / DEFENSE_BREAK_COEF / 100;
             },
             getGlobalBenefit: function(avatar, target) {
                 return 1.0;
@@ -142,7 +142,7 @@ var SkillFactory = {
                 return avatar.attributes.weaponDamage;
             },
             getFinalAttackPower: function(avatar, target) {
-                return avatar.attributes.finalAttackPower;
+                return avatar.attributes.finalAttackPower + avatar.attributes.basicAttackPower * avatar.getExtraAttributes().basicAttckPowerMultiply;
             },
             getCriticalHitChance: function(avatar, target) {
                 // 秘籍
@@ -152,11 +152,11 @@ var SkillFactory = {
                 return avatar.attributes.criticalHitDamage + avatar.getExtraAttributes().criticalHitDamage;
             },
             getDefenseBreakRate: function(avatar, target) {
-                return avatar.attributes.defenseBreakLevel / DEFENSE_BREAK_COEF / 100;
+                return avatar.attributes.defenseBreakLevel * (1 + avatar.getExtraAttributes().defenseBreakMultiply) / DEFENSE_BREAK_COEF / 100;
             },
             getGlobalBenefit: function(avatar, target) {
-                // 秘籍
-                return 1.09;
+                // 秘籍 + 套装效果
+                return 1 + 0.09 + 0.1;
             },
             getTargetDefenseRate: function(avatar, target) {
                 return target.attributes.defenseRate;
@@ -175,7 +175,7 @@ var SkillFactory = {
             target: SkillTarget.Self,
             cdRest: 0,
             getColdTime: function(avatar, target) {
-                return 100;
+                return 1;
             },
             after: function(avatar, target) {
                 avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 1);
@@ -188,7 +188,7 @@ var SkillFactory = {
             cdRest: 0,
             gcdLevel: 0,
             getColdTime: function(avatar, target) {
-                return 1500;
+                return 15;
             },
             getWeaponCoef: function(avatar, target) {
                 return 2.0;
@@ -211,7 +211,7 @@ var SkillFactory = {
                 return avatar.attributes.weaponDamage;
             },
             getFinalAttackPower: function(avatar, target) {
-                return avatar.attributes.finalAttackPower;
+                return avatar.attributes.finalAttackPower + avatar.attributes.basicAttackPower * avatar.getExtraAttributes().basicAttckPowerMultiply;
             },
             getCriticalHitChance: function(avatar, target) {
                 return avatar.attributes.criticalHitChance + avatar.getExtraAttributes().criticalHitChance;
@@ -220,7 +220,7 @@ var SkillFactory = {
                 return avatar.attributes.criticalHitDamage + avatar.getExtraAttributes().criticalHitDamage;
             },
             getDefenseBreakRate: function(avatar, target) {
-                return avatar.attributes.defenseBreakLevel / DEFENSE_BREAK_COEF / 100;
+                return avatar.attributes.defenseBreakLevel * (1 + avatar.getExtraAttributes().defenseBreakMultiply) / DEFENSE_BREAK_COEF / 100;
             },
             getGlobalBenefit: function(avatar, target) {
                 // 秘籍 + 未知二段伤害
@@ -249,7 +249,7 @@ var SkillFactory = {
             gcdLevel: 0,
             getColdTime: function(avatar, target) {
                 // 奇穴：风逝
-                return 600;
+                return 6;
             },
             getWeaponCoef: function(avatar, target) {
                 return 0;
@@ -264,7 +264,7 @@ var SkillFactory = {
                 return avatar.attributes.weaponDamage;
             },
             getFinalAttackPower: function(avatar, target) {
-                return avatar.attributes.finalAttackPower;
+                return avatar.attributes.finalAttackPower + avatar.attributes.basicAttackPower * avatar.getExtraAttributes().basicAttckPowerMultiply;
             },
             getCriticalHitChance: function(avatar, target) {
                 // 奇穴：风逝
@@ -274,7 +274,7 @@ var SkillFactory = {
                 return avatar.attributes.criticalHitDamage + avatar.getExtraAttributes().criticalHitDamage;
             },
             getDefenseBreakRate: function(avatar, target) {
-                return avatar.attributes.defenseBreakLevel / DEFENSE_BREAK_COEF / 100;
+                return avatar.attributes.defenseBreakLevel * (1 + avatar.getExtraAttributes().defenseBreakMultiply) / DEFENSE_BREAK_COEF / 100;
             },
             getGlobalBenefit: function(avatar, target) {
                 return 1.00;
@@ -301,13 +301,69 @@ var SkillFactory = {
             cdRest: 0,
             gcdLevel: 0,
             getColdTime: function(avatar, target) {
-                return 1000;
+                return 10;
             },
             getCastingDuration:function(avatar, target) {
-                return 100;
+                return 1;
             },
             after: function(avatar, target) {
+                avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 2);
                 avatar.addBuff("碎星辰");
+                // 奇穴：期声
+                avatar.addBuff("期声");
+            }
+        },
+        {
+            type: SkillType.Normal,
+            name: "人剑合一",
+            target: SkillTarget.Enemy,
+            cdRest: 0,
+            gcdLevel: 0,
+            getColdTime: function(avatar, target) {
+                // 秘籍
+                return 20 - 3 - 2;
+            },
+            getWeaponCoef: function(avatar, target) {
+                return 0;
+            },
+            getSkillCoef: function(avatar, target) {
+                return 0.1;
+            },
+            getBasicDamage: function(avatar, target) {
+                return 63;
+            },
+            getWeaponDamage: function(avatar, target) {
+                return avatar.attributes.weaponDamage;
+            },
+            getFinalAttackPower: function(avatar, target) {
+                return avatar.attributes.finalAttackPower + avatar.attributes.basicAttackPower * avatar.getExtraAttributes().basicAttckPowerMultiply;
+            },
+            getCriticalHitChance: function(avatar, target) {
+                return avatar.attributes.criticalHitChance + avatar.getExtraAttributes().criticalHitChance;
+            },
+            getCriticalHitDamage: function(avatar, target) {
+                return avatar.attributes.criticalHitDamage + avatar.getExtraAttributes().criticalHitDamage;
+            },
+            getDefenseBreakRate: function(avatar, target) {
+                return avatar.attributes.defenseBreakLevel * (1 + avatar.getExtraAttributes().defenseBreakMultiply) / DEFENSE_BREAK_COEF / 100;
+            },
+            getGlobalBenefit: function(avatar, target) {
+                return 1.00;
+            },
+            getTargetDefenseRate: function(avatar, target) {
+                return target.attributes.defenseRate;
+            },
+            after: function(avatar, target, hitType) {
+                avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 2);
+                // 奇穴：玄门
+                if (avatar.getBuffByName("碎星辰") != null) {
+                    avatar.removeBuff("碎星辰");
+                    avatar.addBuff("玄门");
+                }
+                // 奇穴：深埋
+                if (hitType == HitType.Critical) {
+                    avatar.attributes.qidian = Math.min(MAX_QIDIAN, avatar.attributes.qidian + 2);
+                }
             }
         },
     ],
