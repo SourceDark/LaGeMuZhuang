@@ -48,7 +48,7 @@ var BuffFactory = {
 			tick_duration_max: 3,
 			level: 0,
 			level_max: 5,
-			skillCoef: 0.11425
+			skillCoef: 0.1163
 		}
 	],
 	getBuffByName: function(buffname) {
@@ -60,4 +60,47 @@ var BuffFactory = {
 	    }
 	    return null;
 	},
+}
+
+/*
+ * Determine hit type of a buff tick
+ */
+function CalcBuffHitType(buff, avatar, target) {
+    // Caculate the table
+    var blockChance = Math.max(target.attributes.requiredPrecisionChance - buff.attributes.precisionChance, 0);
+    var criticalHitChance = Math.min(buff.attributes.criticalHitChance, 1 - blockChance);
+    var hitChance = 1 - blockChance - criticalHitChance;
+    // Roll once
+    var roll = Math.random();
+    if (roll < blockChance) {
+        return HitType.Block;
+    }
+    if (roll < blockChance + criticalHitChance) {
+        return HitType.Critical;
+    }
+    return HitType.Hit;
+}
+
+/*
+ * Calc damage of a buff tick
+ */
+function CalcBuffTickDamage(buff, avatar, target, hitType) {
+    // Basic damage
+    var damage = buff.skillCoef * buff.attributes.attackPower;
+    // Defense break
+    damage = damage * (1 + buff.attributes.defenseBreakLevel / DEFENSE_BREAK_COEF / 100);
+    // Crit damage
+    if (hitType == HitType.Critical) {
+        damage = damage * buff.attributes.criticalHitDamage;
+    }
+    // Block damage
+    if (hitType == HitType.Block) {
+        damage = damage / 4;
+    }
+    // Global benefit
+    damage = damage * 1;
+    // Target's defense
+    damage = damage * (1 - target.attributes.defenseRate);
+    // Response
+    return damage;
 }

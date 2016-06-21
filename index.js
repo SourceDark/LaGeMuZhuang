@@ -122,7 +122,7 @@ var AvatarFactory = {
 					}
 				}
 				this.buffs = bufflist;
-
+				// debuffs use a frame
 				var debufflist = [];
 				for (var key in target.buffs) {
 					var buff = target.buffs[key];
@@ -132,6 +132,19 @@ var AvatarFactory = {
 					}
 					else {
 						Logger.logRemoveTargetBuff(buff, this);
+					}
+					buff.tick_duration = Math.max(buff.tick_duration - TIME_PER_FRAME, 0);
+					if (buff.tick_duration == 0) {
+						// Determine hit type
+						var hitType = CalcBuffHitType(buff, this, target);
+						// Calculate damage
+						var damage = CalcBuffTickDamage(buff, this, target, hitType) * buff.level;
+						// Log
+						Logger.logDotDamage(current, buff, this, target, damage, hitType);
+						// Taken damage
+						target.attributes.damageTaken += damage;
+						// Retick
+						buff.tick_duration = buff.tick_duration_max;
 					}
 				}
 				target.buffs = debufflist;
@@ -155,14 +168,18 @@ var AvatarFactory = {
 					}
 					this.buffs.push(buff);
 					buff.level = 0;
-					Logger.logAddBuff(buff, avatar);
+					if (buff.duration != null) buff.duration = buff.duration_max;
+					Logger.logAddBuff(buff, this);
 				}
 				buff.duration = buff.duration_max;
 				buff.level = Math.min(buff.level + levels, buff.level_max);
 				if (avatar != null) {
 					buff.attributes = {
-						attackPower: avatar.attributes.finalAttackPower + avatar.attributes.finalAttackPower * avatar.getExtraAttributes().;
-						criticalHitChance: avatar.attributes.criticalHitChance + 
+						attackPower: avatar.attributes.finalAttackPower + avatar.attributes.basicAttackPower * avatar.getExtraAttributes().basicAttckPowerMultiply,
+						criticalHitChance: avatar.attributes.criticalHitChance + avatar.getExtraAttributes().criticalHitChance,
+						criticalHitDamage: avatar.attributes.criticalHitDamage + avatar.getExtraAttributes().criticalHitDamage,
+						defenseBreakLevel: avatar.attributes.defenseBreakLevel * (1 + avatar.getExtraAttributes().defenseBreakMultiply),
+						precisionChance: avatar.attributes.precisionChance
 					}
 				}
 			},
@@ -252,7 +269,7 @@ var PlayerFactory = {
 }
 
 var sumDPS = 0;
-var totalTimes = 1;
+var totalTimes = 100;
 for (var i = 0; i < totalTimes; i++) {
 	var playerAvatarAttributes = AvatarAttributesFactory.createAvatarAttributes(
 		{
